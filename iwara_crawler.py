@@ -12,37 +12,43 @@ import traceback
 # pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn requests
 
 
-# USER_NAME = "嫚迷GirlFans"
-# FILE_PREFIX = "M"
-USER_NAME = "AlZ"
-FILE_PREFIX = ""
-USER_PAGE_URL = "https://ecchi.iwara.tv/users/{}/videos".format(requests.utils.quote(USER_NAME))
-VIDEO_PAGE = "https://ecchi.iwara.tv"
-VIDEO_API = "https://ecchi.iwara.tv/api"
-MAX_RETRY = 5
-TARGET_INDEX = []
+USER_INFO = [
+    # {"user_name": The name of iwara user, "file_prefix": Add a prefix for all video files if needed}
+    # {"user_name": "嫚迷GirlFans", "file_prefix": "M"},
+    # {"user_name": "AlZ", "file_prefix": ""},
+    # {"user_name": "chaiC_MMD", "file_prefix": ""},
+    {"user_name": "三仁月饼", "file_prefix": "S"},
+]
+PROXIES = {
+    "https": "http://127.0.0.1:8080"
+}
+TARGET_INDEX = [26]  # Download the video by index in this list only. Leave it blank for all.
+MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
+
+IWARA_HOME = "https://ecchi.iwara.tv"  # Change to www for normal video (Are you sure :D)
 
 
-def main():
-    print USER_NAME, USER_PAGE_URL
+def main(user_name, file_prefix):
+    user_page_url = "{}/users/{}/videos".format(IWARA_HOME, requests.utils.quote(user_name))
+    print("{} {}".format(user_name, user_page_url))
     video_list = list()
     page_list = [0]
     for page_index in page_list:
-        print "Reading Page No.{}".format(page_index + 1), "..."
+        print("Reading Page No.{} ...".format(page_index + 1))
         page = requests.get(
-            USER_PAGE_URL,
+            user_page_url,
             params={
                 "page": page_index,
             },
-            proxies={
-                "https": "http://127.0.0.1:8080"
-            }
+            proxies=PROXIES
         ).text
 
         if page_index == 0:
-            page_num = re.search(r"<li class=\"pager-last last\">.+?</li>", page) \
-                .group().split('\"')[-2].split("page=")[-1]
-            page_list += range(1, int(page_num) + 1)
+            pager = re.search(r"<li class=\"pager-last last\">.+?</li>", page)
+            if pager is not None:
+                page_num = re.search(r"<li class=\"pager-last last\">.+?</li>", page) \
+                    .group().split('\"')[-2].split("page=")[-1]
+                page_list += range(1, int(page_num) + 1)
 
         a_list = re.findall(r"<a href=\"/videos/[a-z0-9?=]+\">.+?</a>", page)
         for a in a_list:
@@ -51,39 +57,38 @@ def main():
             video_list.append((a.split("\"")[1], a.split("\"")[-2], ))
         time.sleep(1)
     video_list.reverse()
-    print "Video List:"
+    print("Video List:")
     for i, video in enumerate(video_list):
-        print i + 1, video[1]
-    print "-" * 80
+        print(u"{} {}".format(i + 1, video[1]))
+    print("-" * 80)
 
     error_list = list()
     for i, video in enumerate(video_list):
-        if len(TARGET_INDEX) > 0 and i not in TARGET_INDEX:
+        if len(TARGET_INDEX) > 0 and i + 1 not in TARGET_INDEX:
             continue
-        print i + 1, video[1], VIDEO_PAGE + video[0]
+        print(u"{} {} {}".format(i + 1, video[1], IWARA_HOME + video[0]))
         video_info = requests.get(
-            VIDEO_API + video[0].replace("/videos/", "/video/"),
-            proxies={
-                "https": "http://127.0.0.1:8080"
-            }
+            IWARA_HOME + "/api" + video[0].replace("/videos/", "/video/"),
+            proxies=PROXIES
         ).json()
         time.sleep(1)
+        if len(video_info) == 0:
+            print "Private"
         for info in video_info:
             if info["resolution"] == "Source":
-                print "Source Resolution:", "https:" + info["uri"]
+                print("Source Resolution: https:{}".format(info["uri"]))
                 status = download_file_with_progress(
-                    u"{}{}.{}.{}.mp4".format(
-                        FILE_PREFIX.decode("utf-8"),
-                        USER_NAME.decode("utf-8"),
-                        i + 1,
+                    u"{}{}.{:02d}.{}.mp4".format(
+                        file_prefix.decode("utf-8"),
+                        user_name.decode("utf-8"),
+                        (i + 1),
                         video[1].replace("/", " ").replace("?", " ")),
-                    "https:" + info["uri"])
+                    "https:{}".format(info["uri"]))
                 if status is not True:
-                    error_list.append(i)
-                time.sleep(10)
+                    error_list.append(i + 1)
                 break
     if len(error_list):
-        print error_list
+        print(error_list)
 
 
 def download_file_with_progress(file_name, url):
@@ -96,18 +101,16 @@ def download_file_with_progress(file_name, url):
     try:
         total_length = int(requests.head(
             url,
-            proxies={
-                "https": "http://127.0.0.1:8080"
-            }).headers.get("Content-Length", 1))
-        print local_length, total_length
-        time.sleep(5)
+            proxies=PROXIES
+        ).headers.get("Content-Length", 1))
+        time.sleep(1)
         print(u"Downloading to {}({})".format(file_name, size_display(total_length)))
         while local_length < total_length:
             if retry > 0:
                 if retry > MAX_RETRY:
-                    print "Too many retry. Aborted."
+                    print("Too many retry. Aborted.")
                     break
-                print "Connection Broken. Retry in ", retry * 5, "seconds ..."
+                print("Connection Broken. Retry in {} seconds ...".format(retry * 5))
                 time.sleep(retry * 5)
             headers = dict()
             if local_length > 0:
@@ -115,7 +118,7 @@ def download_file_with_progress(file_name, url):
                     "Range": "bytes={}-".format(local_length)
                 }
             with open(file_name, "ab" if local_length > 0 else "wb") as f:
-                print "GET", url
+                print("GET {}".format(url))
                 dl = 0
                 last_data = None
 
@@ -136,9 +139,8 @@ def download_file_with_progress(file_name, url):
                         url,
                         stream=True,
                         headers=headers,
-                        proxies={
-                            "https": "http://127.0.0.1:8080"
-                        }) as response:
+                        proxies=PROXIES
+                ) as response:
                     if response.status_code == 416:
                         pass
                     else:
@@ -147,10 +149,6 @@ def download_file_with_progress(file_name, url):
                             last_data = data
                 if local_length + dl + len(last_data) == total_length:
                     process_data(dl, last_data)
-                else:
-                    print total_length - local_length - dl - len(last_data)
-                    print total_length, local_length, dl, len(last_data)
-                    print last_data
                 sys.stdout.write("\n")
             local_length = os.path.getsize(file_name)
             retry += 1
@@ -161,10 +159,11 @@ def download_file_with_progress(file_name, url):
             print("Tail {}".format(local_length - total_length))
             # os.remove(file_name)
             # print("Removed.")
+        time.sleep(1)
     except requests.exceptions.SSLError:
-        print traceback.print_exc()
+        traceback.print_exc()
     except requests.exceptions.ConnectionError:
-        print traceback.print_exc()
+        traceback.print_exc()
 
 
 def size_display(size):
@@ -177,4 +176,5 @@ def size_display(size):
 
 
 if __name__ == "__main__":
-    main()
+    for user in USER_INFO:
+        main(user["user_name"], user["file_prefix"])
