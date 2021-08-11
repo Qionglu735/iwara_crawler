@@ -17,12 +17,13 @@ USER_INFO = [
     # {"user_name": "嫚迷GirlFans", "file_prefix": "M"},
     # {"user_name": "AlZ", "file_prefix": ""},
     # {"user_name": "chaiC_MMD", "file_prefix": ""},
-    {"user_name": "三仁月饼", "file_prefix": "S"},
+    # {"user_name": "三仁月饼", "file_prefix": "S"},
+    {"user_name": "LTDEND", "file_prefix": ""},
 ]
 PROXIES = {
     "https": "http://127.0.0.1:8080"
 }
-TARGET_INDEX = [26]  # Download the video by index in this list only. Leave it blank for all.
+TARGET_INDEX = []  # Download the video by index in this list only. Leave it blank for all.
 MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
 
 IWARA_HOME = "https://ecchi.iwara.tv"  # Change to www for normal video (Are you sure :D)
@@ -71,22 +72,23 @@ def main(user_name, file_prefix):
             IWARA_HOME + "/api" + video[0].replace("/videos/", "/video/"),
             proxies=PROXIES
         ).json()
-        time.sleep(1)
         if len(video_info) == 0:
-            print "Private"
-        for info in video_info:
-            if info["resolution"] == "Source":
-                print("Source Resolution: https:{}".format(info["uri"]))
-                status = download_file_with_progress(
-                    u"{}{}.{:02d}.{}.mp4".format(
-                        file_prefix.decode("utf-8"),
-                        user_name.decode("utf-8"),
-                        (i + 1),
-                        video[1].replace("/", " ").replace("?", " ")),
-                    "https:{}".format(info["uri"]))
-                if status is not True:
-                    error_list.append(i + 1)
-                break
+            print("This one is Private.")
+        else:
+            for info in video_info:
+                if info["resolution"] == "Source":
+                    print("Source: https:{}".format(info["uri"]))
+                    status = download_file_with_progress(
+                        u"{}{}.{:03d}.{}.mp4".format(
+                            file_prefix.decode("utf-8"),
+                            user_name.decode("utf-8"),
+                            (i + 1),
+                            video[1].replace("/", " ").replace("?", " ")),
+                        "https:{}".format(info["uri"]))
+                    if status is not True:
+                        error_list.append(i + 1)
+                    break
+        time.sleep(1)
     if len(error_list):
         print(error_list)
 
@@ -118,22 +120,23 @@ def download_file_with_progress(file_name, url):
                     "Range": "bytes={}-".format(local_length)
                 }
             with open(file_name, "ab" if local_length > 0 else "wb") as f:
-                print("GET {}".format(url))
-                dl = 0
-                last_data = None
-
-                def process_data(_dl, _last_data):
-                    if _last_data is not None:
-                        _dl += len(_last_data)
-                        f.write(_last_data)
-                        done = min(int(50 * (local_length + _dl) / total_length), 50)
-                        sys.stdout.write("\r[{}{}] {}/{} {}/s".format(
-                            "=" * done, " " * (50 - done),
-                            size_display(local_length + _dl), size_display(total_length),
-                            size_display(_dl // (time.clock() - start))))
+                def process_data(_current_length):
+                    if last_data is not None:
+                        f.write(last_data)
+                        _current_length += len(last_data)
+                        progress = min(int(50 * (local_length + _current_length) / total_length), 50)
+                        speed = _current_length * 1.0 / (time.clock() - start)
+                        etc = (total_length - (local_length + _current_length)) * 1.0 / speed
+                        sys.stdout.write("\r[{}{}] {}/{} {}/s ETC:{}".format(
+                            "=" * progress, " " * (50 - progress),
+                            size_display(local_length + _current_length), size_display(total_length),
+                            size_display(speed), time_display(etc)
+                        ))
                         sys.stdout.flush()
-                    return _dl
+                    return _current_length
 
+                current_length = 0
+                last_data = None
                 start = time.clock()
                 with requests.get(
                         url,
@@ -141,14 +144,14 @@ def download_file_with_progress(file_name, url):
                         headers=headers,
                         proxies=PROXIES
                 ) as response:
-                    if response.status_code == 416:
+                    if response.status_code == 416:  # Range Not Satisfiable
                         pass
                     else:
                         for data in response.iter_content(chunk_size=4096):
-                            dl = process_data(dl, last_data)
+                            current_length = process_data(current_length)
                             last_data = data
-                if local_length + dl + len(last_data) == total_length:
-                    process_data(dl, last_data)
+                if local_length + current_length + len(last_data) == total_length:
+                    process_data(current_length)
                 sys.stdout.write("\n")
             local_length = os.path.getsize(file_name)
             retry += 1
@@ -168,11 +171,22 @@ def download_file_with_progress(file_name, url):
 
 def size_display(size):
     if size < 1024:
-        return str(size) + "B"
-    if size < 1024 * 1024:
+        return str(int(size)) + "B"
+    elif size < 1024 * 1024:
         return str(round(size * 1.0 / 1024, 3)) + "K"
-    if size < 1024 * 1024 * 1024:
+    elif size < 1024 * 1024 * 1024:
         return str(round(size * 1.0 / 1024 / 1024, 3)) + "M"
+    else:
+        return str(round(size * 1.0 / 1024 / 1024 / 1024, 3)) + "G"
+
+
+def time_display(t):
+    if t < 60:
+        return str(round(t * 1.0, 1)) + "s"
+    elif t < 60 * 60:
+        return str(round(t * 1.0 / 60, 1)) + "m"
+    else:
+        return str(round(t * 1.0 / 60 / 60, 1)) + "h"
 
 
 if __name__ == "__main__":
