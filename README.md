@@ -1,8 +1,6 @@
 
 # Iwara Crawler
 
-### Description
-
 Download all video from specific user automatically.
 
 Resuming download is supported.
