@@ -13,23 +13,37 @@ import traceback
 
 
 USER_INFO = [
-    # {"user_name": The name of iwara user, "file_prefix": Add a prefix for all video files if needed}
-    # {"user_name": "嫚迷GirlFans", "file_prefix": "M"},
-    # {"user_name": "AlZ", "file_prefix": ""},
-    # {"user_name": "chaiC_MMD", "file_prefix": ""},
-    # {"user_name": "三仁月饼", "file_prefix": "S"},
-    {"user_name": "LTDEND", "file_prefix": ""},
+    # {
+    #   "user_name": The name of iwara user, 
+    #   "file_prefix": Add a prefix for all video files if needed,
+    #   "download_index": Download the video by index in this list only. Leave it blank for all
+    # }
+    # {"user_name": "Forget Skyrim.", "file_prefix": "Forget Skyrim", "download_index": [-1]},
+    # {"user_name": "嫖阿姨", "file_prefix": "P嫖阿姨", "download_index": [-1]},
+    # {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
+    # {"user_name": "和颐雪", "file_prefix": "H和颐雪", "download_index": [-1]},
+    # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
+    # {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
+    # {"user_name": "贾唯℡", "file_prefix": "AIZ", "download_index": [-1]},
+    # {"user_name": "chaiC_MMD", "file_prefix": "", "download_index": [-1]},
+    # {"user_name": "三仁月饼", "file_prefix": "S三仁月饼", "download_index": [-1]},
+    # {"user_name": "LTDEND", "file_prefix": "", "download_index": [-1]},
+    # {"user_name": "Mister Pink", "file_prefix": "", "download_index": [29]},
+    # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
+    # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [3]},
+    # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1, -2, -3]},
+    # {"user_name": "水水..", "file_prefix": "S", "download_index": [-1]},
+    # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
 ]
 PROXIES = {
     "https": "http://127.0.0.1:8080"
 }
-TARGET_INDEX = []  # Download the video by index in this list only. Leave it blank for all.
 MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
 
 IWARA_HOME = "https://ecchi.iwara.tv"  # Change to www for normal video (Are you sure :D)
 
 
-def main(user_name, file_prefix):
+def main(user_name, file_prefix, download_index):
     user_page_url = "{}/users/{}/videos".format(IWARA_HOME, requests.utils.quote(user_name))
     print("{} {}".format(user_name, user_page_url))
     video_list = list()
@@ -61,32 +75,40 @@ def main(user_name, file_prefix):
     print("Video List:")
     for i, video in enumerate(video_list):
         print(u"{} {}".format(i + 1, video[1]))
+        video_list[i] += (i + 1,)
     print("-" * 80)
 
+    download_list = list()
     error_list = list()
-    for i, video in enumerate(video_list):
-        if len(TARGET_INDEX) > 0 and i + 1 not in TARGET_INDEX:
-            continue
-        print(u"{} {} {}".format(i + 1, video[1], IWARA_HOME + video[0]))
+    if len(download_index) > 0:
+        for index in download_index:
+            if index > 0:
+                download_list.append(video_list[index - 1])
+            else:
+                download_list.append(video_list[index])
+    else:
+        download_list = video_list[:]
+        download_list.reverse()
+    for i, video in enumerate(download_list):
+        print(u"{} {} {}".format(video[2], video[1], IWARA_HOME + unicode(video[0])))
         video_info = requests.get(
-            IWARA_HOME + "/api" + video[0].replace("/videos/", "/video/"),
+            IWARA_HOME + "/api" + unicode(video[0]).replace("/videos/", "/video/"),
             proxies=PROXIES
         ).json()
         if len(video_info) == 0:
-            print("This one is Private.")
+            print("Private.")
         else:
             for info in video_info:
                 if info["resolution"] == "Source":
                     print("Source: https:{}".format(info["uri"]))
                     status = download_file_with_progress(
-                        u"{}{}.{:03d}.{}.mp4".format(
-                            file_prefix.decode("utf-8"),
-                            user_name.decode("utf-8"),
-                            (i + 1),
-                            video[1].replace("/", " ").replace("?", " ")),
+                        u"{}.{:03d}.{}.mp4".format(
+                            file_prefix.decode("utf-8") if file_prefix != "" else user_name.decode("utf-8"),
+                            video[2],
+                            unicode(video[1]).replace("/", " ").replace("?", " ").replace("*", " ")),
                         "https:{}".format(info["uri"]))
                     if status is not True:
-                        error_list.append(i + 1)
+                        error_list.append(video[2])
                     break
         time.sleep(1)
     if len(error_list):
@@ -191,4 +213,4 @@ def time_display(t):
 
 if __name__ == "__main__":
     for user in USER_INFO:
-        main(user["user_name"], user["file_prefix"])
+        main(user["user_name"], user["file_prefix"], user["download_index"])
