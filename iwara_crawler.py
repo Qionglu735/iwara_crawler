@@ -19,22 +19,23 @@ USER_INFO = [
     #   "download_index": Download the video by index in this list only. Leave it blank for all
     # }
     # {"user_name": "Forget Skyrim.", "file_prefix": "Forget Skyrim", "download_index": [-1]},
-    # {"user_name": "嫖阿姨", "file_prefix": "P嫖阿姨", "download_index": [-1]},
-    # {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
+    {"user_name": "嫖阿姨", "file_prefix": "P嫖阿姨", "download_index": [-1]},
+    {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
     # {"user_name": "和颐雪", "file_prefix": "H和颐雪", "download_index": [-1]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
-    # {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
-    # {"user_name": "贾唯℡", "file_prefix": "AIZ", "download_index": [-1]},
-    # {"user_name": "chaiC_MMD", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
+    {"user_name": "贾唯℡", "file_prefix": "AlZ", "download_index": [-1]},
     # {"user_name": "三仁月饼", "file_prefix": "S三仁月饼", "download_index": [-1]},
     # {"user_name": "LTDEND", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "Mister Pink", "file_prefix": "", "download_index": [29]},
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [3]},
-    # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1, -2, -3]},
-    # {"user_name": "水水..", "file_prefix": "S", "download_index": [-1]},
+    # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "水水..", "file_prefix": "S水水..", "download_index": [-1, -2]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
+    # {"user_name": "煜喵", "file_prefix": "Y煜喵", "download_index": [-1]},
 ]
+
 PROXIES = {
     "https": "http://127.0.0.1:8080"
 }
