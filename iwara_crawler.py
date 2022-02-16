@@ -1,6 +1,7 @@
 
 # -*- coding: utf-8 -*-
 
+import HTMLParser
 import os
 import re
 import requests
@@ -18,10 +19,10 @@ USER_INFO = [
     #   "file_prefix": Add a prefix for all video files if needed,
     #   "download_index": Download the video by index in this list only. Leave it blank for all
     # }
-    # {"user_name": "Forget Skyrim.", "file_prefix": "Forget Skyrim", "download_index": [-1]},
+    {"user_name": "Forget Skyrim.", "file_prefix": "Forget Skyrim", "download_index": [-1]},
     {"user_name": "嫖阿姨", "file_prefix": "P嫖阿姨", "download_index": [-1]},
-    {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
-    # {"user_name": "和颐雪", "file_prefix": "H和颐雪", "download_index": [-1]},
+    {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [42, -1]},
+    {"user_name": "和颐雪", "file_prefix": "H和颐雪", "download_index": [-1]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
     {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
     {"user_name": "贾唯℡", "file_prefix": "AlZ", "download_index": [-1]},
@@ -31,13 +32,15 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [3]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "file_prefix": "S水水..", "download_index": [-1, -2]},
+    {"user_name": "水水..", "file_prefix": "S水水..", "download_index": [-1]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
-    # {"user_name": "煜喵", "file_prefix": "Y煜喵", "download_index": [-1]},
+    {"user_name": "煜喵", "file_prefix": "Y煜喵", "download_index": [-1]},
+    # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
+    {"user_name": "腿 玩 年", "file_prefix": "T腿玩年", "download_index": [-1]},
 ]
 
 PROXIES = {
-    "https": "http://127.0.0.1:8080"
+    # "https": "http://127.0.0.1:8080"
 }
 MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
 
@@ -49,6 +52,7 @@ def main(user_name, file_prefix, download_index):
     print("{} {}".format(user_name, user_page_url))
     video_list = list()
     page_list = [0]
+    html_parser = HTMLParser.HTMLParser()  # for unescape html charter, such as "&#039;"
     for page_index in page_list:
         print("Reading Page No.{} ...".format(page_index + 1))
         page = requests.get(
@@ -70,7 +74,7 @@ def main(user_name, file_prefix, download_index):
         for a in a_list:
             if "img" not in a:
                 continue
-            video_list.append((a.split("\"")[1], a.split("\"")[-2], ))
+            video_list.append((a.split("\"")[1], html_parser.unescape(a.split("\"")[-2]), ))
         time.sleep(1)
     video_list.reverse()
     print("Video List:")
@@ -117,24 +121,43 @@ def main(user_name, file_prefix, download_index):
 
 
 def download_file_with_progress(file_name, url):
+    total_length = -1
     retry = 0
+    while total_length < 0:
+        if retry > 0:
+            if retry > MAX_RETRY:
+                print("Too many retry. Aborted.")
+                return False
+            print("Connection Broken. Retry in {} seconds ...".format(retry * 5))
+            time.sleep(retry * 5)
+        try:
+            total_length = int(requests.head(
+                url,
+                proxies=PROXIES
+            ).headers.get("Content-Length", 1))
+            time.sleep(1)
+        except requests.exceptions.SSLError:
+            # traceback.print_exc()
+            retry += 1
+        except requests.exceptions.ConnectionError:
+            # traceback.print_exc()
+            retry += 1
 
+    print(u"Downloading to {}({})".format(file_name, size_display(total_length)))
     local_length = 0
     if os.path.exists(file_name):
         local_length = os.path.getsize(file_name)
+    if local_length == total_length:
+        print("Completed.")
+        return True
 
     try:
-        total_length = int(requests.head(
-            url,
-            proxies=PROXIES
-        ).headers.get("Content-Length", 1))
-        time.sleep(1)
-        print(u"Downloading to {}({})".format(file_name, size_display(total_length)))
+        retry = 0
         while local_length < total_length:
             if retry > 0:
                 if retry > MAX_RETRY:
                     print("Too many retry. Aborted.")
-                    break
+                    return False
                 print("Connection Broken. Retry in {} seconds ...".format(retry * 5))
                 time.sleep(retry * 5)
             headers = dict()
