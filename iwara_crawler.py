@@ -21,7 +21,7 @@ USER_INFO = [
     # }
     {"user_name": "Forget Skyrim.", "file_prefix": "Forget Skyrim", "download_index": [-1]},
     {"user_name": "嫖阿姨", "file_prefix": "P嫖阿姨", "download_index": [-1]},
-    {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [42, -1]},
+    {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
     {"user_name": "和颐雪", "file_prefix": "H和颐雪", "download_index": [-1]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
     {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
@@ -37,6 +37,8 @@ USER_INFO = [
     {"user_name": "煜喵", "file_prefix": "Y煜喵", "download_index": [-1]},
     # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
     {"user_name": "腿 玩 年", "file_prefix": "T腿玩年", "download_index": [-1]},
+    {"user_name": "sugokunemui", "file_prefix": "sugokunemui", "download_index": [-1]},
+    # {"user_name": "mister-pink", "file_prefix": "mister-pink", "download_index": [-1]},
 ]
 
 PROXIES = {
