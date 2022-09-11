@@ -25,7 +25,7 @@ USER_INFO = [
     {"user_name": "和颐雪", "file_prefix": "H和颐雪", "download_index": [-1]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
     {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
-    {"user_name": "贾唯℡", "file_prefix": "AlZ", "download_index": [-1]},
+    {"user_name": "JUSWE", "file_prefix": "AlZ", "download_index": [-1]},
     # {"user_name": "三仁月饼", "file_prefix": "S三仁月饼", "download_index": [-1]},
     # {"user_name": "LTDEND", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "Mister Pink", "file_prefix": "", "download_index": [29]},
@@ -37,21 +37,27 @@ USER_INFO = [
     {"user_name": "煜喵", "file_prefix": "Y煜喵", "download_index": [-1]},
     # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
     {"user_name": "腿 玩 年", "file_prefix": "T腿玩年", "download_index": [-1]},
-    {"user_name": "sugokunemui", "file_prefix": "sugokunemui", "download_index": [-1]},
+    # {"user_name": "sugokunemui", "file_prefix": "sugokunemui", "download_index": [-1]},
     # {"user_name": "mister-pink", "file_prefix": "mister-pink", "download_index": [-1]},
+    {"user_name": "二两牛肉面jd", "file_prefix": "E二两牛肉面", "download_index": [-1]},
+    # {"user_name": "hisen", "file_prefix": "Hisen", "download_index": [-1]},
+    {"user_name": "MMD_je", "file_prefix": "mmdje", "download_index": [-1, -2, -3]},
 ]
 
 PROXIES = {
-    # "https": "http://127.0.0.1:8080"
+    # "https": "http://127.0.0.1:8080",
 }
 MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
 
 IWARA_HOME = "https://ecchi.iwara.tv"  # Change to www for normal video (Are you sure :D)
 
+success_list = list()
+error_list = list()
+
 
 def main(user_name, file_prefix, download_index):
     user_page_url = "{}/users/{}/videos".format(IWARA_HOME, requests.utils.quote(user_name))
-    print("{} {}".format(user_name, user_page_url))
+    print(u"{} {}".format(user_name.decode("utf-8"), user_page_url))
     video_list = list()
     page_list = [0]
     html_parser = HTMLParser.HTMLParser()  # for unescape html charter, such as "&#039;"
@@ -86,7 +92,6 @@ def main(user_name, file_prefix, download_index):
     print("-" * 80)
 
     download_list = list()
-    error_list = list()
     if len(download_index) > 0:
         for index in download_index:
             if index > 0:
@@ -103,26 +108,28 @@ def main(user_name, file_prefix, download_index):
             proxies=PROXIES
         ).json()
         if len(video_info) == 0:
-            print("Private.")
+            print(u"Private.")
         else:
             for info in video_info:
                 if info["resolution"] == "Source":
                     print("Source: https:{}".format(info["uri"]))
-                    status = download_file_with_progress(
-                        u"{}.{:03d}.{}.mp4".format(
-                            file_prefix.decode("utf-8") if file_prefix != "" else user_name.decode("utf-8"),
-                            video[2],
-                            unicode(video[1]).replace("/", " ").replace("?", " ").replace("*", " ")),
-                        "https:{}".format(info["uri"]))
-                    if status is not True:
-                        error_list.append(video[2])
+                    _file_prefix = u"{}.{:03d}.".format(
+                        file_prefix.decode("utf-8") if file_prefix != "" else user_name.decode("utf-8"),
+                        video[2],
+                    )
+                    _file_name = u"{}.mp4".format(
+                        unicode(video[1]).replace("/", " ").replace("?", " ").replace("*", " "),
+                    )
+                    status = download_file_with_progress(_file_prefix, _file_name, "https:{}".format(info["uri"]))
+                    if status is False:
+                        error_list.append(_file_prefix + _file_name)
+                    elif status == 2:
+                        success_list.append(_file_prefix + _file_name)
                     break
         time.sleep(1)
-    if len(error_list):
-        print(error_list)
 
 
-def download_file_with_progress(file_name, url):
+def download_file_with_progress(file_prefix, file_name, url):
     total_length = -1
     retry = 0
     while total_length < 0:
@@ -145,13 +152,20 @@ def download_file_with_progress(file_name, url):
             # traceback.print_exc()
             retry += 1
 
-    print(u"Downloading to {}({})".format(file_name, size_display(total_length)))
+    print(u"Downloading to {}({})".format(file_prefix + file_name, size_display(total_length)))
     local_length = 0
-    if os.path.exists(file_name):
-        local_length = os.path.getsize(file_name)
-    if local_length == total_length:
-        print("Completed.")
-        return True
+    if os.path.exists(file_prefix + file_name):
+        local_length = os.path.getsize(file_prefix + file_name)
+        if local_length == total_length:
+            print("Completed.")
+            return 1
+    else:
+        # for some reason, file index is changed
+        duplicated = [x.decode("gbk") for x in os.listdir(".") if x.decode("gbk").startswith(file_prefix)]
+        for d in duplicated:
+            print(u"Duplicated: {}".format(d))
+            if "(duplicated)" not in d:
+                os.rename(d, d.replace(".mp4", "(duplicated).mp4"))
 
     try:
         retry = 0
@@ -167,7 +181,7 @@ def download_file_with_progress(file_name, url):
                 headers = {
                     "Range": "bytes={}-".format(local_length)
                 }
-            with open(file_name, "ab" if local_length > 0 else "wb") as f:
+            with open(file_prefix + file_name, "ab" if local_length > 0 else "wb") as f:
                 def process_data(_current_length):
                     if last_data is not None:
                         f.write(last_data)
@@ -201,14 +215,14 @@ def download_file_with_progress(file_name, url):
                 if local_length + current_length + len(last_data) == total_length:
                     process_data(current_length)
                 sys.stdout.write("\n")
-            local_length = os.path.getsize(file_name)
+            local_length = os.path.getsize(file_prefix + file_name)
             retry += 1
         if local_length == total_length:
             print("Completed.")
-            return True
+            return 2
         elif local_length > total_length:
             print("Tail {}".format(local_length - total_length))
-            # os.remove(file_name)
+            # os.remove(file_prefix + file_name)
             # print("Removed.")
         time.sleep(1)
     except requests.exceptions.SSLError:
@@ -240,3 +254,7 @@ def time_display(t):
 if __name__ == "__main__":
     for user in USER_INFO:
         main(user["user_name"], user["file_prefix"], user["download_index"])
+    if len(success_list):
+        print(u"Success:\n{}".format("\n".join(success_list)))
+    if len(error_list):
+        print(u"Error:\n{}".format("\n".join(error_list)))
