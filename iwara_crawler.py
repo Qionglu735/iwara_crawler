@@ -41,11 +41,12 @@ USER_INFO = [
     # {"user_name": "mister-pink", "file_prefix": "mister-pink", "download_index": [-1]},
     {"user_name": "二两牛肉面jd", "file_prefix": "E二两牛肉面", "download_index": [-1]},
     # {"user_name": "hisen", "file_prefix": "Hisen", "download_index": [-1]},
-    {"user_name": "MMD_je", "file_prefix": "mmdje", "download_index": [-1, -2, -3]},
+    {"user_name": "MMD_je", "file_prefix": "mmdje", "download_index": [-1, -2, -3, -4, -5]},
+    {"user_name": "emisa", "file_prefix": "emisa", "download_index": [-1]},
 ]
 
 PROXIES = {
-    # "https": "http://127.0.0.1:8080",
+    # "https": "http://192.168.50.38:8080",
 }
 MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
 
@@ -161,7 +162,8 @@ def download_file_with_progress(file_prefix, file_name, url):
             return 1
     else:
         # for some reason, file index is changed
-        duplicated = [x.decode("gbk") for x in os.listdir(".") if x.decode("gbk").startswith(file_prefix)]
+        duplicated = [x.decode("gbk" if sys.platform == "win32" else "utf-8") for x in os.listdir(".")
+                      if x.decode("gbk" if sys.platform == "win32" else "utf-8").startswith(file_prefix)]
         for d in duplicated:
             print(u"Duplicated: {}".format(d))
             if "(duplicated)" not in d:
