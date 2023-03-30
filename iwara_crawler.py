@@ -32,7 +32,7 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [3]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "file_prefix": "S水水..", "download_index": [-1, -2, -3]},
+    {"user_name": "水水..", "file_prefix": "S水水..", "download_index": [-1]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "file_prefix": "Y煜喵", "download_index": [-1]},
     # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
@@ -41,7 +41,7 @@ USER_INFO = [
     # {"user_name": "mister-pink", "file_prefix": "mister-pink", "download_index": [-1]},
     {"user_name": "二两牛肉面jd", "file_prefix": "E二两牛肉面", "download_index": [-1]},
     # {"user_name": "hisen", "file_prefix": "Hisen", "download_index": [-1]},
-    {"user_name": "MMD_je", "file_prefix": "mmdje", "download_index": [-1, -2, -3, -4, -5]},
+    {"user_name": "MMD_je", "file_prefix": "mmdje", "download_index": [-1]},
     {"user_name": "emisa", "file_prefix": "", "download_index": [-1]},
     {"user_name": "穴儿湿袭之", "file_prefix": "S穴儿湿袭之", "download_index": [-1]},
     {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
@@ -217,7 +217,7 @@ def download_file_with_progress(file_prefix, file_name, url):
                         url,
                         stream=True,
                         headers=headers,
-                        proxies=PROXIES
+                        proxies=PROXIES,
                 ) as response:
                     if response.status_code == 416:  # Range Not Satisfiable
                         pass
@@ -265,6 +265,7 @@ def time_display(t):
 
 
 if __name__ == "__main__":
+    USER_INFO.reverse()
     for user in USER_INFO:
         main(user["user_name"], user["file_prefix"], user["download_index"])
     if len(success_list):
