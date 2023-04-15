@@ -12,12 +12,12 @@ USER_INFO = [
     #   "file_prefix": Add a prefix for all video files if needed,
     #   "download_index": Download the video by index in this list only. Leave it blank for all
     # }
-    {"user_name": "Forget Skyrim.", "file_prefix": "Forget Skyrim"},
-    {"user_name": "嫖阿姨", "file_prefix": "P嫖阿姨"},
+    {"user_name": "Forget Skyrim.", "profile_name": "forgetskyrim", "file_prefix": "Forget Skyrim"},
+    {"user_name": "嫖阿姨", "profile_name": "user798290", "file_prefix": "P嫖阿姨"},
     {"user_name": "491033063", "file_prefix": "S神经觉醒"},
-    {"user_name": "和颐雪", "file_prefix": "H和颐雪"},
+    {"user_name": "和颐雪", "profile_name": "user787392", "file_prefix": "H和颐雪"},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD"},
-    {"user_name": "嫚迷GirlFans", "file_prefix": "M嫚迷GirlFans"},
+    {"user_name": "嫚迷GirlFans", "profile_name": "girlfans", "file_prefix": "M嫚迷GirlFans"},
     {"user_name": "JUSWE", "file_prefix": "AlZ"},
     # {"user_name": "三仁月饼", "file_prefix": "S三仁月饼"},
     # {"user_name": "LTDEND", "file_prefix": ""},
@@ -25,18 +25,18 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": ""},
     # {"user_name": "jvmpdark", "file_prefix": ""},
     # {"user_name": "EcchiFuta", "file_prefix": ""},
-    {"user_name": "水水..", "file_prefix": "S水水.."},
+    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水.."},
     # {"user_name": "慕光", "file_prefix": "M慕光"},
-    {"user_name": "煜喵", "file_prefix": "Y煜喵"},
+    {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵"},
     # {"user_name": "113458", "file_prefix": "Y113458"},
-    {"user_name": "腿 玩 年", "file_prefix": "T腿玩年"},
+    {"user_name": "腿 玩 年", "profile_name": "user221116", "file_prefix": "T腿玩年"},
     # {"user_name": "sugokunemui", "file_prefix": "sugokunemui"},
     # {"user_name": "mister-pink", "file_prefix": "mister-pink"},
-    {"user_name": "二两牛肉面jd", "file_prefix": "E二两牛肉面"},
+    {"user_name": "二两牛肉面jd", "profile_name": "user178752", "file_prefix": "E二两牛肉面"},
     # {"user_name": "hisen", "file_prefix": "Hisen"},
-    {"user_name": "MMD_je", "file_prefix": "mmdje"},
+    {"user_name": "MMD_je", "profile_name": "mmdje", "file_prefix": "mmdje"},
     {"user_name": "emisa", "file_prefix": ""},
-    {"user_name": "穴儿湿袭之", "file_prefix": "S穴儿湿袭之"},
+    {"user_name": "穴儿湿袭之", "profile_name": "user1235858", "file_prefix": "S穴儿湿袭之"},
     {"user_name": "SEALING", "file_prefix": ""},
     {"user_name": "icegreentea", "file_prefix": ""},
     {"user_name": "NekoSugar", "file_prefix": ""},
@@ -50,9 +50,13 @@ MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change
 DATE_LIMIT = 7
 
 
-def main(user_name, file_prefix):
-    print("{} https://www.iwara.tv/profile/{}".format(user_name, requests.utils.quote(user_name)))
-    user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(user_name))
+def main(user_name, file_prefix, profile_name=None):
+    if profile_name is not None:
+        user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(profile_name))
+        print("{} https://www.iwara.tv/profile/{}".format(user_name, profile_name))
+    else:
+        user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(user_name))
+        print("{} https://www.iwara.tv/profile/{}".format(user_name, user_name))
     user_api_req = requests.get(user_api)
     # print user_api_req.text
     if "message" in user_api_req.json() and user_api_req.json()["message"] == "errors.notFound":
@@ -62,7 +66,10 @@ def main(user_name, file_prefix):
             "query": user_name,
             "page": 0,
         })
-        # print search_api_req.text
+        if len(search_api_req.json()["results"]) == 0:
+            print "user not found"
+            print("-" * 80)
+            return
         id_like_username = search_api_req.json()["results"][0]["username"]
         print("{} https://www.iwara.tv/profile/{}".format(user_name, id_like_username))
         user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(id_like_username))
@@ -114,7 +121,11 @@ def main(user_name, file_prefix):
 if __name__ == "__main__":
     USER_INFO.reverse()
     for user in USER_INFO:
-        main(user["user_name"], user["file_prefix"])
+        main(
+            user["user_name"],
+            user["file_prefix"],
+            user["profile_name"] if "profile_name" in user else None,
+        )
         time.sleep(3)
 
 
