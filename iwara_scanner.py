@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import os
+import random
 import requests
 import time
 
@@ -45,9 +47,8 @@ USER_INFO = [
 PROXIES = {
     # "https": "http://127.0.0.1:8080",
 }
-MAX_RETRY = 5  # Maximum retry time if download progress is broke. Try to change network or use a proxy instead.
 
-DATE_LIMIT = 7
+DATE_LIMIT = 14
 
 
 def main(user_name, file_prefix, profile_name=None):
@@ -58,7 +59,10 @@ def main(user_name, file_prefix, profile_name=None):
         user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(user_name))
         print("{} https://www.iwara.tv/profile/{}".format(user_name, user_name))
     user_api_req = requests.get(user_api)
-    # print user_api_req.text
+    while user_api_req.status_code not in [200]:
+        print user_api_req.status_code
+        time.sleep(random.randint(1, 5))
+        user_api_req = requests.get(user_api)
     if "message" in user_api_req.json() and user_api_req.json()["message"] == "errors.notFound":
         search_api = "https://api.iwara.tv/search"
         search_api_req = requests.get(search_api, params={
@@ -74,7 +78,6 @@ def main(user_name, file_prefix, profile_name=None):
         print("{} https://www.iwara.tv/profile/{}".format(user_name, id_like_username))
         user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(id_like_username))
         user_api_req = requests.get(user_api)
-    # print(user_api_req)
     user_id = user_api_req.json()["user"]["id"]
 
     video_list = list()
@@ -87,9 +90,13 @@ def main(user_name, file_prefix, profile_name=None):
             "user": user_id,
             "sort": "date",
             "page": page,
-        }).json()
-        count = video_api_req["count"]
-        for item in video_api_req["results"]:
+        })
+        if video_api_req.status_code not in [200]:
+            print video_api_req.status_code
+            time.sleep(random.randint(1, 5))
+            continue
+        count = video_api_req.json()["count"]
+        for item in video_api_req.json()["results"]:
             if item["slug"] is not None:
                 video_url = "https://www.iwara.tv/video/{}/{}".format(item["id"], item["slug"])
             else:
@@ -113,7 +120,8 @@ def main(user_name, file_prefix, profile_name=None):
             unicode(video[1]).replace("/", " ").replace("?", " ").replace("*", " "),
         )
         if video[2] >= datetime.datetime.now() - datetime.timedelta(days=DATE_LIMIT):
-            print(u"{} {} {} {}".format(i + 1, _file_prefix + _file_name, video[0], video[2]))
+            print(u"{} {} {} {} {}".format(i + 1, _file_prefix + _file_name, video[0], video[2],
+                  "Downloaded" if os.path.isfile(_file_prefix + _file_name) else ""))
         video_list[i] += (i + 1,)
     print("-" * 80)
 
