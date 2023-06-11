@@ -58,18 +58,18 @@ def main(user_name, file_prefix, profile_name=None):
     else:
         user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(user_name))
         print("{} https://www.iwara.tv/profile/{}".format(user_name, user_name))
-    user_api_req = requests.get(user_api)
+    user_api_req = requests.get(user_api, proxies=PROXIES)
     while user_api_req.status_code not in [200]:
-        print user_api_req.status_code
+        print "profile_api", user_api_req.status_code
         time.sleep(random.randint(1, 5))
-        user_api_req = requests.get(user_api)
+        user_api_req = requests.get(user_api, proxies=PROXIES)
     if "message" in user_api_req.json() and user_api_req.json()["message"] == "errors.notFound":
         search_api = "https://api.iwara.tv/search"
         search_api_req = requests.get(search_api, params={
             "type": "user",
             "query": user_name,
             "page": 0,
-        })
+        }, proxies=PROXIES)
         if len(search_api_req.json()["results"]) == 0:
             print "user not found"
             print("-" * 80)
@@ -77,7 +77,7 @@ def main(user_name, file_prefix, profile_name=None):
         id_like_username = search_api_req.json()["results"][0]["username"]
         print("{} https://www.iwara.tv/profile/{}".format(user_name, id_like_username))
         user_api = "https://api.iwara.tv/profile/{}".format(requests.utils.quote(id_like_username))
-        user_api_req = requests.get(user_api)
+        user_api_req = requests.get(user_api, proxies=PROXIES)
     user_id = user_api_req.json()["user"]["id"]
 
     video_list = list()
@@ -90,7 +90,7 @@ def main(user_name, file_prefix, profile_name=None):
             "user": user_id,
             "sort": "date",
             "page": page,
-        })
+        }, proxies=PROXIES)
         if video_api_req.status_code not in [200]:
             print video_api_req.status_code
             time.sleep(random.randint(1, 5))
@@ -120,8 +120,12 @@ def main(user_name, file_prefix, profile_name=None):
             unicode(video[1]).replace("/", " ").replace("?", " ").replace("*", " "),
         )
         if video[2] >= datetime.datetime.now() - datetime.timedelta(days=DATE_LIMIT):
-            print(u"{} {} {} {} {}".format(i + 1, _file_prefix + _file_name, video[0], video[2],
-                  "Downloaded" if os.path.isfile(_file_prefix + _file_name) else ""))
+            print(u"{}\n{} {} {}".format(
+                _file_prefix + _file_name,
+                "[Downloaded]" if os.path.isfile(_file_prefix + _file_name) else "",
+                video[0],
+                video[2],
+            ))
         video_list[i] += (i + 1,)
     print("-" * 80)
 

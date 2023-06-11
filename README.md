@@ -1,6 +1,7 @@
 
-# _**NOT WORK ANYMORE SINCE 2023-03-17**_
+### _**NOT WORK ANYMORE SINCE 2023-03-17**_
 
+### The _scanner.py have similar function, but only produce urls and have to download manually_ 
 
 # Iwara Crawler
 
