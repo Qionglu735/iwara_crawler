@@ -1,3 +1,5 @@
 .idea
+tmp_dir
 venv
 *.mp4
+token.json
