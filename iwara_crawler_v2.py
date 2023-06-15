@@ -26,7 +26,7 @@ USER_INFO = [
     #   "download_index": Download the video by index in this list only. Leave it blank for all
     # }
     {"user_name": "Forget Skyrim.", "profile_name": "forgetskyrim", "file_prefix": "Forget Skyrim", "download_index": [-1]},
-    {"user_name": "嫖阿姨", "profile_name": "user798290", "file_prefix": "P嫖阿姨", "download_index": [-1]},
+    # {"user_name": "嫖阿姨", "profile_name": "user798290", "file_prefix": "P嫖阿姨", "download_index": [-1]},
     {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
     {"user_name": "和颐雪", "profile_name": "user787392", "file_prefix": "H和颐雪", "download_index": [-1]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
@@ -50,13 +50,13 @@ USER_INFO = [
     {"user_name": "MMD_je", "profile_name": "mmdje", "file_prefix": "mmdje", "download_index": [-1]},
     {"user_name": "emisa", "file_prefix": "", "download_index": [-1]},
     {"user_name": "穴儿湿袭之", "profile_name": "user1235858", "file_prefix": "S穴儿湿袭之", "download_index": [-1]},
-    {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
+    # {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
     {"user_name": "icegreentea", "file_prefix": "", "download_index": [-1]},
     {"user_name": "NekoSugar", "file_prefix": "", "download_index": [-1]},
 ]
 
 PROXIES = {
-    "https": "http://127.0.0.1:18080",
+    "https": "http://127.0.0.1:8080",
 }
 
 IWARA_HOME = "https://www.iwara.tv/"
@@ -108,12 +108,15 @@ def create_dir():
     return os.path.join(root_dir, dir_name)
 
 
-def download_file_with_progress(url, local_dir):
+def download_file_with_progress(url, filename):
+    local_dir = create_dir()
+
     options = webdriver.ChromeOptions()
     options.add_argument("--lang=en-US")
     # options.add_argument(f"--proxy-server=127.0.0.1:8080")
-    options.add_argument(f"--proxy-server={PROXIES['https'].replace('http://', '')}")
-    # options.add_argument("-devtools")
+    if "https" in PROXIES:
+        options.add_argument(f"--proxy-server={PROXIES['https'].replace('http://', '')}")
+    options.add_argument("--devtools")
     options.add_experimental_option("prefs", {
         "download.default_directory": local_dir,
     })
@@ -177,6 +180,10 @@ def download_file_with_progress(url, local_dir):
                             progress_string = progress_string.replace("\n", "").strip(" ")
                             # sys.stdout.write(f"\r{progress_string}")
                             if progress_string == "":
+                                sys.stdout.write("\rprocessing...")
+                                actual_file_name = os.listdir(local_dir)[0]
+                                shutil.move(os.path.join(local_dir, actual_file_name), filename)
+                                shutil.rmtree(local_dir)
                                 sys.stdout.write("\rCompleted.")
                                 break
                             des_list = progress_string.replace(",", "").split(" ")
@@ -258,7 +265,7 @@ def main(user_name, file_prefix, download_index, profile_name=None):
             ))
         page += 1
         # print page, limit, page * limit, count
-    # video_list.reverse()
+    video_list.reverse()
     print("Video List:")
     for i, video in enumerate(video_list):
         print(u"{} {}".format(i + 1, video[1]))
@@ -290,11 +297,7 @@ def main(user_name, file_prefix, download_index, profile_name=None):
         if os.path.exists(_file_prefix + _file_name):
             print("Completed.")
         else:
-            tmp_dir = create_dir()
-            download_file_with_progress(video[0], tmp_dir)
-            actual_file_name = os.listdir(tmp_dir)[0]
-            shutil.move(os.path.join(tmp_dir, actual_file_name), _file_prefix + _file_name)
-            shutil.rmtree(tmp_dir)
+            download_file_with_progress(video[0], _file_prefix + _file_name)
 
 
 if __name__ == "__main__":
