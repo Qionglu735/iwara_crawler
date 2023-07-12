@@ -3,7 +3,7 @@
 
 ## iwara_crawler_v2.py
 
-Download all video from specific user automatically.
+Download all videos from specific user automatically.
 
 _**Warning**: Account info is used in this script._
 
@@ -27,11 +27,15 @@ _May cause your account banned / blocked. There is no guarantee._
 
 6. watch out for the remaining disk space and HAVE FUN :)
 
+
+
 ## iwara_scanner.py
 
-Using open api to scan video info, no account info used.
+Using public api to scan videos, no account info used.
 
 But only produce urls, have to download manually one by one.
+
+
 
 ## iwara_crawler.py
 

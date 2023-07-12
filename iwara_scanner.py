@@ -45,7 +45,7 @@ USER_INFO = [
 ]
 
 PROXIES = {
-    # "https": "http://127.0.0.1:8080",
+    "https": "http://127.0.0.1:8080",
 }
 
 DATE_LIMIT = 14

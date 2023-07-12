@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
+import datetime
 import json
 import math
 import os
@@ -18,17 +19,20 @@ import string
 import sys
 import time
 
+from webdriver_manager.core.download_manager import WDMDownloadManager
+from webdriver_manager.core.http import HttpClient
 
 USER_INFO = [
     # {
-    #   "user_name": The name of iwara user,
-    #   "file_prefix": Add a prefix for all video files if needed,
+    #   "user_name": The name of iwara user
+    #   "file_prefix": Add a prefix for all video files if needed
     #   "download_index": Download the video by index in this list only. Leave it blank for all
+    #   "profile_name": Optional. Actual name in profile page link. eg: https://www.iwara.tv/profile/user787392
     # }
     {"user_name": "Forget Skyrim.", "profile_name": "forgetskyrim", "file_prefix": "Forget Skyrim", "download_index": [-1]},
     # {"user_name": "嫖阿姨", "profile_name": "user798290", "file_prefix": "P嫖阿姨", "download_index": [-1]},
     {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
-    {"user_name": "和颐雪", "profile_name": "user787392", "file_prefix": "H和颐雪", "download_index": [-1]},
+    {"user_name": "和颐雪", "profile_name": "user787392", "file_prefix": "H和颐雪", "download_index": [-1, -2]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
     {"user_name": "嫚迷GirlFans", "profile_name": "girlfans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
     {"user_name": "JUSWE", "file_prefix": "AlZ", "download_index": [-1]},
@@ -38,7 +42,7 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1]},
+    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1, -2, -3, -4]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵", "download_index": [-1]},
     # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
@@ -49,30 +53,40 @@ USER_INFO = [
     # {"user_name": "hisen", "file_prefix": "Hisen", "download_index": [-1]},
     {"user_name": "MMD_je", "profile_name": "mmdje", "file_prefix": "mmdje", "download_index": [-1]},
     {"user_name": "emisa", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "穴儿湿袭之", "profile_name": "user1235858", "file_prefix": "S穴儿湿袭之", "download_index": [-1]},
+    # {"user_name": "穴儿湿袭之", "profile_name": "user1235858", "file_prefix": "S穴儿湿袭之", "download_index": [-1]},
     # {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
     {"user_name": "icegreentea", "file_prefix": "", "download_index": [-1]},
     {"user_name": "NekoSugar", "file_prefix": "", "download_index": [-1]},
 ]
 
+DATE_LIMIT = 14  # Prevent downloading aged videos, 0 for unlimited
+
 PROXIES = {
-    "https": "http://127.0.0.1:8080",
+    # "http": "http://127.0.0.1:8080",
+    # "https": "http://127.0.0.1:8080",
 }
 
 IWARA_HOME = "https://www.iwara.tv/"
 IWARA_API = "https://api.iwara.tv/"
 
 
+class HttpClientWithProxy(HttpClient):
+    def get(self, url, params=None, **_kwargs) -> requests.Response:
+        return requests.get(url, params, proxies=PROXIES, verify=False)
+
+
 def get_token():
     options = webdriver.ChromeOptions()
-    options.add_argument(f"--proxy-server={PROXIES['https'].replace('http://', '')}")
+    options.add_argument(f"--proxy-server={PROXIES['http'].replace('http://', '')}")
     if not os.path.isfile("token.json"):
         ua = UserAgent()
         user_agent = ua.random
         print(user_agent)
         options.add_argument(f"--user-agent={user_agent}")
         with webdriver.Chrome(
-                service=ChromeService(ChromeDriverManager().install()),
+                service=ChromeService(ChromeDriverManager(
+                    download_manager=WDMDownloadManager(HttpClientWithProxy())
+                ).install()),
                 options=options
         ) as driver:
             driver.get(f"{IWARA_HOME}login")
@@ -113,9 +127,8 @@ def download_file_with_progress(url, filename):
 
     options = webdriver.ChromeOptions()
     options.add_argument("--lang=en-US")
-    # options.add_argument(f"--proxy-server=127.0.0.1:8080")
-    if "https" in PROXIES:
-        options.add_argument(f"--proxy-server={PROXIES['https'].replace('http://', '')}")
+    if "http" in PROXIES:
+        options.add_argument(f"--proxy-server={PROXIES['http'].replace('http://', '')}")
     options.add_argument("--devtools")
     options.add_experimental_option("prefs", {
         "download.default_directory": local_dir,
@@ -124,10 +137,13 @@ def download_file_with_progress(url, filename):
     user_agent, token = get_token()
 
     options.add_argument(f"--user-agent={user_agent}")
-    options.add_argument("--headless=new")
+    # options.add_argument("--headless=new")
 
     with webdriver.Chrome(
-        service=ChromeService(ChromeDriverManager().install()),
+        # service=ChromeService(ChromeDriverManager().install()),
+        service=ChromeService(ChromeDriverManager(
+            download_manager=WDMDownloadManager(HttpClientWithProxy())
+        ).install()),
         options=options,
     ) as driver:
         sys.stdout.write("\rlogin...")
@@ -229,7 +245,6 @@ def main(user_name, file_prefix, download_index, profile_name=None):
         }, proxies=PROXIES)
         if len(search_api_req.json()["results"]) == 0:
             print("user not found")
-            print("-" * 80)
             return
         id_like_username = search_api_req.json()["results"][0]["username"]
         print(f"{user_name} {IWARA_HOME}profile/{id_like_username}")
@@ -259,17 +274,18 @@ def main(user_name, file_prefix, download_index, profile_name=None):
                 video_url = f"{IWARA_HOME}video/{item['id']}/{item['slug']}"
             else:
                 video_url = f"{IWARA_HOME}video/{item['id']}"
-            video_list.append((
-                video_url,
-                item["title"],
-            ))
+            video_list.append({
+                "url": video_url,
+                "title": item["title"],
+                "create_time": datetime.datetime.strptime(item["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
+            })
         page += 1
         # print page, limit, page * limit, count
     video_list.reverse()
     print("Video List:")
     for i, video in enumerate(video_list):
-        print(u"{} {}".format(i + 1, video[1]))
-        video_list[i] += (i + 1,)
+        print(f"{i + 1} {video['title']} {video['create_time']}")
+        video_list[i]["index"] = i + 1
     print("-" * 80)
 
     download_list = list()
@@ -284,24 +300,26 @@ def main(user_name, file_prefix, download_index, profile_name=None):
         download_list.reverse()
 
     for i, video in enumerate(download_list):
-        print(f"{video[2]} {video[1]} {video[0]}")
+        if DATE_LIMIT > 0 and video["create_time"] < datetime.datetime.now() - datetime.timedelta(DATE_LIMIT):
+            continue
+        print(f"{video['index']} {video['title']} {video['url']} {video['create_time']}")
         _file_prefix = "{}.{:03d}.".format(
             file_prefix if file_prefix != "" else user_name,
-            video[2],
+            video["index"],
         )
         _file_name = u"{}.mp4".format(
-            video[1].replace("/", " ").replace("?", " ").replace("*", " "),
+            video["title"].replace("/", " ").replace("?", " ").replace("*", " "),
         )
 
         print(f"Downloading to {_file_prefix + _file_name}")
         if os.path.exists(_file_prefix + _file_name):
             print("Completed.")
         else:
-            download_file_with_progress(video[0], _file_prefix + _file_name)
+            download_file_with_progress(video["url"], _file_prefix + _file_name)
 
 
 if __name__ == "__main__":
-    USER_INFO.reverse()
+    # USER_INFO.reverse()
     for user in USER_INFO:
         main(
             user["user_name"],
@@ -309,6 +327,4 @@ if __name__ == "__main__":
             user["download_index"],
             user["profile_name"] if "profile_name" in user else None,
         )
-        print("-" * 80)
-
-    # print(download_file_with_progress("https://www.iwara.tv/video/VMtsceXOEFnGP9/mmdeevee-3"))
+        print("")
