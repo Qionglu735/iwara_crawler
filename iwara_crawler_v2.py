@@ -137,7 +137,7 @@ def download_file_with_progress(url, filename):
     user_agent, token = get_token()
 
     options.add_argument(f"--user-agent={user_agent}")
-    # options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
 
     with webdriver.Chrome(
         # service=ChromeService(ChromeDriverManager().install()),
