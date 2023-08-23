@@ -32,7 +32,7 @@ USER_INFO = [
     {"user_name": "Forget Skyrim.", "profile_name": "forgetskyrim", "file_prefix": "Forget Skyrim", "download_index": [-1]},
     # {"user_name": "嫖阿姨", "profile_name": "user798290", "file_prefix": "P嫖阿姨", "download_index": [-1]},
     {"user_name": "491033063", "file_prefix": "S神经觉醒", "download_index": [-1]},
-    {"user_name": "和颐雪", "profile_name": "user787392", "file_prefix": "H和颐雪", "download_index": [-1, -2]},
+    {"user_name": "和颐雪", "profile_name": "user787392", "file_prefix": "H和颐雪", "download_index": [-1]},
     # {"user_name": "miraclegenesismmd", "file_prefix": "MiracleGenesisMMD", "download_index": [-1]},
     {"user_name": "嫚迷GirlFans", "profile_name": "girlfans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
     {"user_name": "JUSWE", "file_prefix": "AlZ", "download_index": [-1]},
@@ -42,7 +42,7 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1, -2, -3, -4]},
+    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵", "download_index": [-1]},
     # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
@@ -57,6 +57,9 @@ USER_INFO = [
     # {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
     {"user_name": "icegreentea", "file_prefix": "", "download_index": [-1]},
     {"user_name": "NekoSugar", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "113458", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "紫星幻月", "profile_name": "zxhy", "file_prefix": "Z紫星幻月", "download_index": [-1]},
+    {"user_name": "break", "profile_name": "break_12138", "file_prefix": "break", "download_index": [-1]},
 ]
 
 DATE_LIMIT = 14  # Prevent downloading aged videos, 0 for unlimited
@@ -69,6 +72,7 @@ PROXIES = {
 IWARA_HOME = "https://www.iwara.tv/"
 IWARA_API = "https://api.iwara.tv/"
 
+# Chrome Driver https://googlechromelabs.github.io/chrome-for-testing/
 
 class HttpClientWithProxy(HttpClient):
     def get(self, url, params=None, **_kwargs) -> requests.Response:
@@ -84,10 +88,12 @@ def get_token():
         print(user_agent)
         options.add_argument(f"--user-agent={user_agent}")
         with webdriver.Chrome(
-                service=ChromeService(ChromeDriverManager(
-                    download_manager=WDMDownloadManager(HttpClientWithProxy())
-                ).install()),
-                options=options
+            # service=ChromeService(ChromeDriverManager(
+            #     version="114.0.5735.90",
+            #     download_manager=WDMDownloadManager(HttpClientWithProxy())
+            # ).install()),
+            service=ChromeService("./chromedriver.exe"),
+            options=options,
         ) as driver:
             driver.get(f"{IWARA_HOME}login")
             while True:
@@ -140,10 +146,11 @@ def download_file_with_progress(url, filename):
     options.add_argument("--headless=new")
 
     with webdriver.Chrome(
-        # service=ChromeService(ChromeDriverManager().install()),
-        service=ChromeService(ChromeDriverManager(
-            download_manager=WDMDownloadManager(HttpClientWithProxy())
-        ).install()),
+        # service=ChromeService(ChromeDriverManager(
+        #     version="114.0.5735.90",
+        #     download_manager=WDMDownloadManager(HttpClientWithProxy()),
+        # ).install()),
+        service=ChromeService("./chromedriver.exe"),
         options=options,
     ) as driver:
         sys.stdout.write("\rlogin...")
@@ -157,9 +164,21 @@ def download_file_with_progress(url, filename):
             time.sleep(random.randint(1, 3))
             sys.stdout.write("\rfetch download url...")
             driver.get(url)
-
             try:
-                download_button = WebDriverWait(driver, 20).until(
+                r = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, ".header__content"))
+                )
+                r = r.find_element(By.CSS_SELECTOR, ".header__link")
+                if "Register" in r.get_attribute("innerHTML"):
+                    sys.stdout.write(" login failed. Please delete token.json and retry.")
+                    driver.quit()
+                    return
+            except TimeoutException:
+                sys.stdout.write(" timeout.")
+                driver.quit()
+                return
+            try:
+                download_button = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, ".downloadButton"))
                 )
                 # download_button = driver.find_element(By.CSS_SELECTOR, ".downloadButton")
@@ -215,10 +234,10 @@ def download_file_with_progress(url, filename):
                                 (des_list[8] if len(des_list) > 8 else "") + (des_list[9] if len(des_list) > 9 else "")
                             ))
             except TimeoutException:
-                sys.stdout.write(" Timeout.")
+                sys.stdout.write(" timeout.")
 
         except TimeoutException:
-            sys.stdout.write(" Timeout.")
+            sys.stdout.write(" timeout.")
 
         driver.quit()
         print("")
@@ -308,7 +327,17 @@ def main(user_name, file_prefix, download_index, profile_name=None):
             video["index"],
         )
         _file_name = u"{}.mp4".format(
-            video["title"].replace("/", " ").replace("?", " ").replace("*", " "),
+            video["title"]
+            .replace("\\", " ")
+            .replace("/", " ")
+            .replace(":", " ")
+            .replace("*", " ")
+            .replace("?", " ")
+            .replace("\"", " ")
+            .replace("<", " ")
+            .replace(">", " ")
+            .replace("|", " ")
+            ,
         )
 
         print(f"Downloading to {_file_prefix + _file_name}")
