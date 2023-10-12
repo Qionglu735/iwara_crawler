@@ -45,7 +45,7 @@ USER_INFO = [
     {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵", "download_index": [-1]},
-    # {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
+    {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
     {"user_name": "腿 玩 年", "profile_name": "user221116", "file_prefix": "T腿玩年", "download_index": [-1]},
     # {"user_name": "sugokunemui", "file_prefix": "sugokunemui", "download_index": [-1]},
     # {"user_name": "mister-pink", "file_prefix": "mister-pink", "download_index": [-1]},
@@ -53,13 +53,14 @@ USER_INFO = [
     # {"user_name": "hisen", "file_prefix": "Hisen", "download_index": [-1]},
     {"user_name": "MMD_je", "profile_name": "mmdje", "file_prefix": "mmdje", "download_index": [-1]},
     {"user_name": "emisa", "file_prefix": "", "download_index": [-1]},
-    # {"user_name": "穴儿湿袭之", "profile_name": "user1235858", "file_prefix": "S穴儿湿袭之", "download_index": [-1]},
+    {"user_name": "穴儿湿袭之", "profile_name": "user1235858", "file_prefix": "S穴儿湿袭之", "download_index": [-1]},
     # {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
     {"user_name": "icegreentea", "file_prefix": "", "download_index": [-1]},
     {"user_name": "NekoSugar", "file_prefix": "", "download_index": [-1]},
     {"user_name": "113458", "file_prefix": "", "download_index": [-1]},
     {"user_name": "紫星幻月", "profile_name": "zxhy", "file_prefix": "Z紫星幻月", "download_index": [-1]},
     {"user_name": "break", "profile_name": "break_12138", "file_prefix": "break", "download_index": [-1]},
+    {"user_name": "acezen3d", "profile_name": "acezen3d", "file_prefix": "acezen3d", "download_index": [-1]},
 ]
 
 DATE_LIMIT = 14  # Prevent downloading aged videos, 0 for unlimited
@@ -128,6 +129,10 @@ def create_dir():
     return os.path.join(root_dir, dir_name)
 
 
+success_list = list()
+error_list = list()
+
+
 def download_file_with_progress(url, filename):
     local_dir = create_dir()
 
@@ -172,11 +177,13 @@ def download_file_with_progress(url, filename):
                 if "Register" in r.get_attribute("innerHTML"):
                     sys.stdout.write(" login failed. Please delete token.json and retry.")
                     driver.quit()
-                    return
+                    print("")
+                    return False
             except TimeoutException:
                 sys.stdout.write(" timeout.")
                 driver.quit()
-                return
+                print("")
+                return False
             try:
                 download_button = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, ".downloadButton"))
@@ -204,8 +211,10 @@ def download_file_with_progress(url, filename):
                                 if (downloads_manager != null) {
                                     let frb0 = downloads_manager.shadowRoot.querySelector("#frb0");
                                     if (frb0 != null) {
-                                        let description = frb0.shadowRoot.querySelector("#description");
-                                        res = description.innerHTML;
+                                        let description = frb0.shadowRoot.querySelector(".description");
+                                        if (description != null) {
+                                            res = description.innerHTML;
+                                        }
                                     }
                                 }
                                 return res;
@@ -235,12 +244,19 @@ def download_file_with_progress(url, filename):
                             ))
             except TimeoutException:
                 sys.stdout.write(" timeout.")
+                driver.quit()
+                print("")
+                return False
 
         except TimeoutException:
             sys.stdout.write(" timeout.")
+            driver.quit()
+            print("")
+            return False
 
         driver.quit()
         print("")
+        return True
 
 
 def main(user_name, file_prefix, download_index, profile_name=None):
@@ -344,7 +360,10 @@ def main(user_name, file_prefix, download_index, profile_name=None):
         if os.path.exists(_file_prefix + _file_name):
             print("Completed.")
         else:
-            download_file_with_progress(video["url"], _file_prefix + _file_name)
+            if download_file_with_progress(video["url"], _file_prefix + _file_name):
+                success_list.append(_file_prefix + _file_name)
+            else:
+                error_list.append(_file_prefix + _file_name)
 
 
 if __name__ == "__main__":
@@ -357,3 +376,12 @@ if __name__ == "__main__":
             user["profile_name"] if "profile_name" in user else None,
         )
         print("")
+
+    if len(success_list) > 0:
+        print("Success List:")
+        for i in success_list:
+            print(i)
+    if len(error_list) > 0:
+        print("Error List:")
+        for i in error_list:
+            print(i)
