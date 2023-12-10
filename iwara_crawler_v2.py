@@ -37,15 +37,15 @@ USER_INFO = [
     {"user_name": "嫚迷GirlFans", "profile_name": "girlfans", "file_prefix": "M嫚迷GirlFans", "download_index": [-1]},
     {"user_name": "JUSWE", "file_prefix": "AlZ", "download_index": [-1]},
     # {"user_name": "三仁月饼", "file_prefix": "S三仁月饼", "download_index": [-1]},
-    # {"user_name": "LTDEND", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "LTDEND", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "Mister Pink", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1]},
+    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1, -2]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵", "download_index": [-1]},
-    {"user_name": "113458", "file_prefix": "Y113458", "download_index": [-1]},
+    {"user_name": "113458", "file_prefix": "113458", "download_index": [-1]},
     {"user_name": "腿 玩 年", "profile_name": "user221116", "file_prefix": "T腿玩年", "download_index": [-1]},
     # {"user_name": "sugokunemui", "file_prefix": "sugokunemui", "download_index": [-1]},
     # {"user_name": "mister-pink", "file_prefix": "mister-pink", "download_index": [-1]},
@@ -57,10 +57,13 @@ USER_INFO = [
     # {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
     {"user_name": "icegreentea", "file_prefix": "", "download_index": [-1]},
     {"user_name": "NekoSugar", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "113458", "file_prefix": "", "download_index": [-1]},
     {"user_name": "紫星幻月", "profile_name": "zxhy", "file_prefix": "Z紫星幻月", "download_index": [-1]},
-    {"user_name": "break", "profile_name": "break_12138", "file_prefix": "break", "download_index": [-1]},
-    {"user_name": "acezen3d", "profile_name": "acezen3d", "file_prefix": "acezen3d", "download_index": [-1]},
+    {"user_name": "break", "profile_name": "break_12138", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "BAY_MAX", "profile_name": "user938319", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "Lucia", "profile_name": "user1419843", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "MapleHutCat", "profile_name": "maplehut", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "MARAMW", "profile_name": "MARAMW", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "byqn", "profile_name": "kianazzz", "file_prefix": "", "download_index": [-1]},
 ]
 
 DATE_LIMIT = 14  # Prevent downloading aged videos, 0 for unlimited
@@ -75,6 +78,7 @@ IWARA_API = "https://api.iwara.tv/"
 
 # Chrome Driver https://googlechromelabs.github.io/chrome-for-testing/
 
+
 class HttpClientWithProxy(HttpClient):
     def get(self, url, params=None, **_kwargs) -> requests.Response:
         return requests.get(url, params, proxies=PROXIES, verify=False)
@@ -82,7 +86,8 @@ class HttpClientWithProxy(HttpClient):
 
 def get_token():
     options = webdriver.ChromeOptions()
-    options.add_argument(f"--proxy-server={PROXIES['http'].replace('http://', '')}")
+    if "http" in PROXIES:
+        options.add_argument(f"--proxy-server={PROXIES['http'].replace('http://', '')}")
     if not os.path.isfile("token.json"):
         ua = UserAgent()
         user_agent = ua.random
@@ -170,7 +175,7 @@ def download_file_with_progress(url, filename):
             sys.stdout.write("\rfetch download url...")
             driver.get(url)
             try:
-                r = WebDriverWait(driver, 10).until(
+                r = WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, ".header__content"))
                 )
                 r = r.find_element(By.CSS_SELECTOR, ".header__link")
@@ -180,12 +185,12 @@ def download_file_with_progress(url, filename):
                     print("")
                     return False
             except TimeoutException:
-                sys.stdout.write(" timeout.")
+                sys.stdout.write(" timeout(1).")
                 driver.quit()
                 print("")
                 return False
             try:
-                download_button = WebDriverWait(driver, 10).until(
+                download_button = WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, ".downloadButton"))
                 )
                 # download_button = driver.find_element(By.CSS_SELECTOR, ".downloadButton")
@@ -224,7 +229,34 @@ def download_file_with_progress(url, filename):
                             progress_string = progress_string.replace("\n", "").strip(" ")
                             # sys.stdout.write(f"\r{progress_string}")
                             if progress_string == "":
+                                # resume_button = driver.execute_script("""
+                                #     return function(){
+                                #         let res = null;
+                                #         let downloads_manager = document.querySelector("downloads-manager");
+                                #         if (downloads_manager != null) {
+                                #             let frb0 = downloads_manager.shadowRoot.querySelector("#frb0");
+                                #             if (frb0 != null) {
+                                #                 let resume_button = frb0.shadowRoot.querySelector("#pauseOrResume");
+                                #                 if (resume_button != null) {
+                                #                     let button_panel = resume_button.parentElement;
+                                #                     if (button_panel.style.display !== "none") {
+                                #                         resume_button.click();
+                                #                         res = "true";
+                                #                     }
+                                #                 }
+                                #             }
+                                #         }
+                                #         return res;
+                                #     }();
+                                # """)
+                                # if resume_button is not None:
+                                #     continue
+                                # else:
                                 sys.stdout.write("\rprocessing...")
+                                actual_file_list = os.listdir(local_dir)
+                                if len(actual_file_list) == 0:
+                                    sys.stdout.write("\rFailed.")
+                                    return False
                                 actual_file_name = os.listdir(local_dir)[0]
                                 shutil.move(os.path.join(local_dir, actual_file_name), filename)
                                 shutil.rmtree(local_dir)
@@ -243,13 +275,13 @@ def download_file_with_progress(url, filename):
                                 (des_list[8] if len(des_list) > 8 else "") + (des_list[9] if len(des_list) > 9 else "")
                             ))
             except TimeoutException:
-                sys.stdout.write(" timeout.")
+                sys.stdout.write(" timeout(2).")
                 driver.quit()
                 print("")
                 return False
 
         except TimeoutException:
-            sys.stdout.write(" timeout.")
+            sys.stdout.write(" timeout(3).")
             driver.quit()
             print("")
             return False
