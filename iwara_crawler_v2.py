@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.http import HttpClient
 
 import datetime
 import json
@@ -18,9 +18,6 @@ import shutil
 import string
 import sys
 import time
-
-from webdriver_manager.core.download_manager import WDMDownloadManager
-from webdriver_manager.core.http import HttpClient
 
 USER_INFO = [
     # {
@@ -42,7 +39,7 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1, -2]},
+    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵", "download_index": [-1]},
     {"user_name": "113458", "file_prefix": "113458", "download_index": [-1]},
@@ -57,16 +54,17 @@ USER_INFO = [
     # {"user_name": "SEALING", "file_prefix": "", "download_index": [-1]},
     {"user_name": "icegreentea", "file_prefix": "", "download_index": [-1]},
     {"user_name": "NekoSugar", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "紫星幻月", "profile_name": "zxhy", "file_prefix": "Z紫星幻月", "download_index": [-1]},
+    # {"user_name": "紫星幻月", "profile_name": "zxhy", "file_prefix": "Z紫星幻月", "download_index": [-1]},
     {"user_name": "break", "profile_name": "break_12138", "file_prefix": "", "download_index": [-1]},
     {"user_name": "BAY_MAX", "profile_name": "user938319", "file_prefix": "", "download_index": [-1]},
     {"user_name": "Lucia", "profile_name": "user1419843", "file_prefix": "", "download_index": [-1]},
     {"user_name": "MapleHutCat", "profile_name": "maplehut", "file_prefix": "", "download_index": [-1]},
     {"user_name": "MARAMW", "profile_name": "MARAMW", "file_prefix": "", "download_index": [-1]},
     {"user_name": "byqn", "profile_name": "kianazzz", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "Zai1we", "profile_name": "user1537569", "file_prefix": "", "download_index": [-1]},
 ]
 
-DATE_LIMIT = 14  # Prevent downloading aged videos, 0 for unlimited
+DATE_LIMIT = 14   # Prevent downloading aged videos, 0 for unlimited
 
 PROXIES = {
     # "http": "http://127.0.0.1:8080",
@@ -358,17 +356,22 @@ def main(user_name, file_prefix, download_index, profile_name=None):
     download_list = list()
     if len(download_index) > 0:
         for index in download_index:
-            if index > 0:
-                download_list.append(video_list[index - 1])
+            if index == 0:
+                pass
+            elif index > 0:
+                if index - 1 < len(video_list):
+                    download_list.append(video_list[index - 1])
             else:
-                download_list.append(video_list[index])
+                if index + len(video_list) > 0:
+                    if (DATE_LIMIT > 0 and video_list[index]["create_time"] <
+                            datetime.datetime.now() - datetime.timedelta(DATE_LIMIT)):
+                        continue
+                    download_list.append(video_list[index])
     else:
         download_list = video_list[:]
         download_list.reverse()
 
     for i, video in enumerate(download_list):
-        if DATE_LIMIT > 0 and video["create_time"] < datetime.datetime.now() - datetime.timedelta(DATE_LIMIT):
-            continue
         print(f"{video['index']} {video['title']} {video['url']} {video['create_time']}")
         _file_prefix = "{}.{:03d}.".format(
             file_prefix if file_prefix != "" else user_name,
