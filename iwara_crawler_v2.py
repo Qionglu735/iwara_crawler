@@ -13,6 +13,7 @@ import json
 import math
 import os
 import random
+import re
 import requests
 import shutil
 import string
@@ -39,7 +40,7 @@ USER_INFO = [
     # {"user_name": "qimiaotianshi", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "jvmpdark", "file_prefix": "", "download_index": [-1]},
     # {"user_name": "EcchiFuta", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1]},
+    {"user_name": "水水..", "profile_name": "user937858", "file_prefix": "S水水..", "download_index": [-1, -2]},
     # {"user_name": "慕光", "file_prefix": "M慕光", "download_index": [-1]},
     {"user_name": "煜喵", "profile_name": "user1107866", "file_prefix": "Y煜喵", "download_index": [-1]},
     {"user_name": "113458", "file_prefix": "113458", "download_index": [-1]},
@@ -62,6 +63,7 @@ USER_INFO = [
     {"user_name": "MARAMW", "profile_name": "MARAMW", "file_prefix": "", "download_index": [-1]},
     {"user_name": "byqn", "profile_name": "kianazzz", "file_prefix": "", "download_index": [-1]},
     {"user_name": "Zai1we", "profile_name": "user1537569", "file_prefix": "", "download_index": [-1]},
+    {"user_name": "A_Lane", "profile_name": "user3112646", "file_prefix": "", "download_index": [-1]},
 ]
 
 DATE_LIMIT = 14   # Prevent downloading aged videos, 0 for unlimited
@@ -225,7 +227,8 @@ def download_file_with_progress(url, filename):
                         """)
                         if progress_string is not None:
                             progress_string = progress_string.replace("\n", "").strip(" ")
-                            # sys.stdout.write(f"\r{progress_string}")
+                            progress_string = re.sub(r"<!--.+-->", "", progress_string)
+                            sys.stdout.write(f"\r{progress_string}")
                             if progress_string == "":
                                 # resume_button = driver.execute_script("""
                                 #     return function(){
