@@ -59,8 +59,8 @@ USER_INFO = [
     {"user_name": "break", "profile_name": "break_12138", "file_prefix": "", "download_index": [-1]},
     {"user_name": "BAY_MAX", "profile_name": "user938319", "file_prefix": "", "download_index": [-1]},
     {"user_name": "Lucia", "profile_name": "user1419843", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "MapleHutCat", "profile_name": "maplehut", "file_prefix": "", "download_index": [-1]},
-    {"user_name": "MARAMW", "profile_name": "MARAMW", "file_prefix": "", "download_index": [-1]},
+    # {"user_name": "MapleHutCat", "profile_name": "maplehut", "file_prefix": "", "download_index": [-1]},
+    # {"user_name": "MARAMW", "profile_name": "MARAMW", "file_prefix": "", "download_index": [-1]},
     {"user_name": "byqn", "profile_name": "kianazzz", "file_prefix": "", "download_index": [-1]},
     {"user_name": "Zai1we", "profile_name": "user1537569", "file_prefix": "", "download_index": [-1]},
     {"user_name": "A_Lane", "profile_name": "user3112646", "file_prefix": "", "download_index": [-1]},
@@ -178,8 +178,8 @@ def download_file_with_progress(url, filename):
                 r = WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, ".header__content"))
                 )
-                r = r.find_element(By.CSS_SELECTOR, ".header__link")
-                if "Register" in r.get_attribute("innerHTML"):
+                # r = r.find_element(By.CSS_SELECTOR, ".header__link")
+                if "Register" in r.find_element(By.CSS_SELECTOR, ".header__link").get_attribute("innerHTML"):
                     sys.stdout.write(" login failed. Please delete token.json and retry.")
                     driver.quit()
                     print("")
@@ -351,9 +351,9 @@ def main(user_name, file_prefix, download_index, profile_name=None):
         # print page, limit, page * limit, count
     video_list.reverse()
     print("Video List:")
-    for i, video in enumerate(video_list):
-        print(f"{i + 1} {video['title']} {video['create_time']}")
-        video_list[i]["index"] = i + 1
+    for _i, video in enumerate(video_list):
+        print(f"{_i + 1} {video['title']} {video['create_time']}")
+        video_list[_i]["index"] = _i + 1
     print("-" * 80)
 
     download_list = list()
